@@ -159,19 +159,11 @@ test_correct = 0
 test_total = 0
 
 with torch.no_grad():
-    for images,labels in test_loader:
-
-        output = model(images)
-
-        preds = outputs.argmax(dim = 1)
-
-        print("images:", images.shape)
-        print("labels:", labels.shape)
-        print("outputs:", outputs.shape)
-        print("preds:", preds.shape)
+    for images, labels in test_loader:
+        outputs = model(images)
+        preds = outputs.argmax(dim=1)
 
         test_correct += (preds == labels).sum().item()
-
         test_total += labels.size(0)
 test_accuracy = test_correct / test_total * 100
 
