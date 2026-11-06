@@ -112,9 +112,67 @@ class ViT(nn.Module):
         return x
 model = ViT()
 
-dummy_input = torch.randn(32, 1, 28, 28)
+criterion = nn.CrossEntropyLoss()
 
-output = model(dummy_input)
+optimizer = optim.Adam(
+    model.parameters(),
+    lr=0.001
+)
 
-print(output.shape)
-        
+num_epochs = 10
+
+for epoch in range(num_epochs):
+    model.train()
+
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    for images, labels in train_loader:
+        optimizer.zero_grad()
+
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item()
+
+        preds = outputs.argmax(dim=1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+    # 一个 Epoch 的所有 Batch 训练完后，再统计
+    epoch_loss = running_loss / len(train_loader)
+    accuracy = correct / total * 100
+
+    print(
+        f"Epoch [{epoch+1}/{num_epochs}], "
+        f"Loss: {epoch_loss:.4f}, "
+        f"Accuracy: {accuracy:.2f}%"
+    )
+
+model.eval()
+
+test_correct = 0
+test_total = 0
+
+with torch.no_grad():
+    for images,labels in test_loader:
+
+        output = model(images)
+
+        preds = outputs.argmax(dim = 1)
+
+        print("images:", images.shape)
+        print("labels:", labels.shape)
+        print("outputs:", outputs.shape)
+        print("preds:", preds.shape)
+
+        test_correct += (preds == labels).sum().item()
+
+        test_total += labels.size(0)
+test_accuracy = test_correct / test_total * 100
+
+print(f"Test Accuracy:{test_accuracy:.2f}%")
