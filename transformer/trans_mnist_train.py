@@ -152,6 +152,12 @@ for epoch in range(num_epochs):
         f"Loss: {epoch_loss:.4f}, "
         f"Accuracy: {accuracy:.2f}%"
     )
+torch.save(
+    model.state_dict(),
+    "./mnist_vit.pth"
+)
+
+print("模型保存成功！")
 
 model.eval()
 
