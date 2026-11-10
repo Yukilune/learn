@@ -1,0 +1,170 @@
+
+from collections import Counter
+
+
+class BPETokenizer:
+
+    # ==========================================
+    # 1. 初始化
+    # ==========================================
+
+    def __init__(self, num_merges=100):
+
+        self.num_merges = num_merges
+        self.merge_rules = []
+        self.vocab = {}
+
+    # ==========================================
+    # 2. 合并函数
+    # ==========================================
+
+    def merge_pair(self, sequence, pair, new_token):
+
+        result = []
+        i = 0
+
+        while i < len(sequence):
+
+            if (
+                i < len(sequence) - 1
+                and sequence[i] == pair[0]
+                and sequence[i + 1] == pair[1]
+            ):
+                result.append(new_token)
+                i += 2
+
+            else:
+                result.append(sequence[i])
+                i += 1
+
+        return result
+
+    # ==========================================
+    # 3. BPE 训练
+    # ==========================================
+
+    def train(self, corpus):
+
+        sequences = []
+
+        for text in corpus:
+            encoded = text.encode("utf-8")
+            token_ids = list(encoded)
+            sequences.append(token_ids)
+
+        self.merge_rules = []
+
+        for step in range(self.num_merges):
+
+            pair_counts = Counter()
+
+            for sequence in sequences:
+
+                for i in range(len(sequence) - 1):
+
+                    pair = (sequence[i], sequence[i + 1])
+                    pair_counts[pair] += 1
+
+            if not pair_counts:
+                break
+
+            best_pair = pair_counts.most_common(1)[0][0]
+
+            new_token = 256 + step
+
+            self.merge_rules.append((best_pair, new_token))
+
+            new_sequences = []
+
+            for sequence in sequences:
+
+                merged = self.merge_pair(
+                    sequence,
+                    best_pair,
+                    new_token
+                )
+
+                new_sequences.append(merged)
+
+            sequences = new_sequences
+
+        self.build_vocab()
+
+    # ==========================================
+    # 4. 构建词表
+    # ==========================================
+
+    def build_vocab(self):
+
+        self.vocab = {}
+
+        for i in range(256):
+            self.vocab[i] = bytes([i])
+
+        for pair, new_token in self.merge_rules:
+
+            self.vocab[new_token] = (
+                self.vocab[pair[0]] + self.vocab[pair[1]]
+            )
+
+    # ==========================================
+    # 5. 编码
+    # ==========================================
+
+    def encode(self, text):
+
+        encoded = text.encode("utf-8")
+        token_ids = list(encoded)
+
+        for pair, new_token in self.merge_rules:
+
+            token_ids = self.merge_pair(
+                token_ids,
+                pair,
+                new_token
+            )
+
+        return token_ids
+
+    # ==========================================
+    # 6. 解码
+    # ==========================================
+
+    def decode(self, token_ids):
+
+        decoded_bytes = b"".join(
+            self.vocab[token_id]
+            for token_id in token_ids
+        )
+
+        return decoded_bytes.decode("utf-8")
+
+
+# ==========================================
+# 7. 测试
+# ==========================================
+
+if __name__ == "__main__":
+
+    corpus = [
+        "banana",
+        "bandana",
+        "banana",
+        "hello",
+        "hello world"
+    ]
+
+    tokenizer = BPETokenizer(num_merges=10)
+
+    tokenizer.train(corpus)
+
+    text = "banana"
+
+    token_ids = tokenizer.encode(text)
+
+    decoded_text = tokenizer.decode(token_ids)
+
+    print("合并规则：", tokenizer.merge_rules)
+    print("编码结果：", token_ids)
+    print("解码结果：", decoded_text)
+    print("是否还原成功：", text == decoded_text)
