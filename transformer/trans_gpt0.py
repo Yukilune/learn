@@ -145,15 +145,29 @@ if __name__ == "__main__":
         max_seq_len
     )
 
-    input_ids = torch.randint(
+    tokens = torch.randint(
         0,
         vocab_size,
-        (4, 10)
+        (4, 11)
+    )
+    input_ids = tokens[:,:-1]
+    target_ids = tokens[:,1:]
+
+    loss_fn = nn.CrossEntropyLoss()
+    
+
+    optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr=0.001
     )
 
+    optimizer.zero_grad()
     logits = model(input_ids)
+    loss = loss_fn(
+        logits.reshape(-1,vocab_size),
+        target_ids.reshape(-1)
+    )
+    loss.backward()
+    optimizer.step()
 
-    print("Input:", input_ids.shape)
-    print("Logits:", logits.shape)
-
-    print("Decoder Blocks:", len(model.blocks))
+    print("Loss:",loss.item())
