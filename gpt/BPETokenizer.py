@@ -1,6 +1,6 @@
 
 from collections import Counter
-
+import json
 
 class BPETokenizer:
 
@@ -138,13 +138,42 @@ class BPETokenizer:
         )
 
         return decoded_bytes.decode("utf-8")
+    def save(self, path):
 
+        data = {
+            "num_merges": self.num_merges,
+
+            "merge_rules": [
+            [list(pair), new_token]
+            for pair, new_token in self.merge_rules
+            ]
+        }
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    def load(self, path):
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        self.num_merges = data["num_merges"]
+
+        self.merge_rules = [
+            (tuple(pair), new_token)
+            for pair, new_token in data["merge_rules"]
+        ]
+
+        self.build_vocab()
 
 # ==========================================
 # 7. 测试
 # ==========================================
 
 if __name__ == "__main__":
+
+    # =================================
+    # 1. 准备训练语料
+    # =================================
 
     corpus = [
         "banana",
@@ -154,17 +183,63 @@ if __name__ == "__main__":
         "hello world"
     ]
 
-    tokenizer = BPETokenizer(num_merges=10)
+    # =================================
+    # 2. 训练 Tokenizer
+    # =================================
 
+    tokenizer = BPETokenizer(num_merges=10)
     tokenizer.train(corpus)
+
+    print("合并规则：", tokenizer.merge_rules)
+
+    # =================================
+    # 3. 测试编码和解码
+    # =================================
+
+    test_texts = [
+        "banana",
+        "hello",
+        "hello world",
+        "你好，世界！",
+        "I love deep learning."
+    ]
+
+    for text in test_texts:
+
+        token_ids = tokenizer.encode(text)
+
+        decoded_text = tokenizer.decode(token_ids)
+
+        print("=" * 40)
+        print("原始文本：", text)
+        print("Token IDs：", token_ids)
+        print("解码文本：", decoded_text)
+        print("还原成功：", text == decoded_text)
+
+    # =================================
+    # 4. 保存 Tokenizer
+    # =================================
+
+    tokenizer.save("bpe_tokenizer.json")
+
+    # =================================
+    # 5. 创建新对象并加载
+    # =================================
+
+    tokenizer2 = BPETokenizer()
+    tokenizer2.load("bpe_tokenizer.json")
+
+    # =================================
+    # 6. 测试加载后的 Tokenizer
+    # =================================
 
     text = "banana"
 
-    token_ids = tokenizer.encode(text)
+    ids = tokenizer2.encode(text)
+    decoded = tokenizer2.decode(ids)
 
-    decoded_text = tokenizer.decode(token_ids)
-
-    print("合并规则：", tokenizer.merge_rules)
-    print("编码结果：", token_ids)
-    print("解码结果：", decoded_text)
-    print("是否还原成功：", text == decoded_text)
+    print("=" * 40)
+    print("加载后的规则：", tokenizer2.merge_rules)
+    print("编码结果：", ids)
+    print("解码结果：", decoded)
+    print("还原成功：", text == decoded)
