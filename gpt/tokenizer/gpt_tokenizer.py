@@ -106,12 +106,16 @@ class BPETokenizer:
             self.vocab[new_token] = (
                 self.vocab[pair[0]] + self.vocab[pair[1]]
             )
+        self.eos_token = "<|endoftext|>"
+        self.eos_token_id = 256 + len(self.merge_rules)
+
+        self.vocab[self.eos_token_id] = self.eos_token.encode("utf-8")
 
     # ==========================================
     # 5. 编码
     # ==========================================
 
-    def encode(self, text):
+    def encode(self, text, add_eos=False):
 
         encoded = text.encode("utf-8")
         token_ids = list(encoded)
@@ -124,6 +128,9 @@ class BPETokenizer:
                 new_token
             )
 
+        if add_eos:
+            token_ids.append(self.eos_token_id)
+
         return token_ids
 
     # ==========================================
@@ -135,9 +142,10 @@ class BPETokenizer:
         decoded_bytes = b"".join(
             self.vocab[token_id]
             for token_id in token_ids
+            if token_id != self.eos_token_id
         )
 
-        return decoded_bytes.decode("utf-8")
+        return decoded_bytes.decode("utf-8", errors="replace")
     def save(self, path):
 
         data = {
@@ -243,3 +251,5 @@ if __name__ == "__main__":
     print("编码结果：", ids)
     print("解码结果：", decoded)
     print("还原成功：", text == decoded)
+
+    # 测试普通编码

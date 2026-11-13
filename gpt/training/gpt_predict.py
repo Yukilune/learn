@@ -1,8 +1,8 @@
 
 import torch
 
-from BPETokenizer import BPETokenizer
-from GPTModel import GPTModel
+from gpt.tokenizer.gpt_tokenizer import BPETokenizer
+from gpt.model.gpt_model import GPTModel
 
 
 def generate(
